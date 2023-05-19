@@ -145,11 +145,17 @@ class BarcodeGenerator:
     def scan_barcode(self):
         # 打开摄像头进行扫描
         video_capture = cv2.VideoCapture(0)
+        # 设置窗口的最小尺寸
+        self.root.minsize(500, 600)
 
         def scan_loop():
             nonlocal video_capture
-
             ret, frame = video_capture.read()
+            # 获取摄像头的帧率
+            fps = video_capture.get(cv2.CAP_PROP_FPS)
+            # 将帧率添加到摄像头的视频流上
+            cv2.putText(frame, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
             if not ret:
                 messagebox.showerror("Error", "Cannot turn on the camera")
                 return
