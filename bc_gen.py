@@ -29,7 +29,7 @@ class BarcodeGenerator:
         self.root.title("Bar code generation system")
         self.root.geometry("500x400")
 
-        # 创建标签和输入框
+        # Create labels and input fields
         self.room_label = tk.Label(self.root, text="Room number:")
         self.room_label.pack()
         self.room_entry = tk.Entry(self.root)
@@ -50,19 +50,19 @@ class BarcodeGenerator:
         self.location_menu = tk.OptionMenu(self.root, tk.StringVar(), *self.get_csv_data("Location.csv"))
         self.location_menu.pack()
 
-        # 创建生成条形码按钮
+        # Create Generate Barcode button
         self.generate_button = tk.Button(self.root, text="Generate barcode", command=self.generate_barcode)
         self.generate_button.pack()
 
-        # 创建扫描条形码按钮
+        # Create scan barcode button
         self.scan_button = tk.Button(self.root, text="Scan barcode", command=self.scan_barcode)
         self.scan_button.pack()
 
-        # 创建摄像头显示框
+        # Create camera display box
         self.video_frame = tk.Label(self.root)
         self.video_frame.pack()
 
-        # 用于存储已使用的编号
+        # Used to store used numbers
         self.used_numbers = {"room": set(), "type": set(), "brand": set(), "location": set(), "product": set()}
         self.load_used_numbers()
 
@@ -70,7 +70,7 @@ class BarcodeGenerator:
         data = []
         with open(filename, "r") as file:
             reader = csv.reader(file)
-            next(reader)  # 跳过标题行
+            next(reader)  # Skip header line
             for row in reader:
                 data.append(row[0])
         return data
@@ -85,24 +85,24 @@ class BarcodeGenerator:
             messagebox.showerror("Error", "Please enter all information")
             return
 
-        # 生成随机编号
+        # Generate random number
         barcode_number = self.get_random_number_for_field("product")
 
         if barcode_number is None:
             return
 
-        # 获取CSV行号
+        # Get CSV line number
         type_index = self.get_csv_data("AssetType.csv").index(product_type) + 1
         brand_index = self.get_csv_data("Brand.csv").index(product_brand) + 1
         location_index = self.get_csv_data("Location.csv").index(asset_location) + 1
 
-        # 生成条形码文本
+        # Generate barcode text
         barcode_text = f"{room_number}-{type_index:03d}-{brand_index:03d}-{location_index:03d}-{barcode_number}"
 
-        # 创建条形码图像
+        # Creating Barcode Images
         barcode_image = self.generate_barcode_image(barcode_text)
 
-        # 保存条形码图像
+        # Save barcode images
         save_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG Image", "*.png")])
         if save_path:
             barcode_image.save(save_path)
@@ -110,15 +110,15 @@ class BarcodeGenerator:
         else:
             messagebox.showinfo("Save Cancelled", "Bar code image saving is cancelled")
 
-        # 显示条形码图像
+        # Display barcode images
         barcode_image.show()
 
     def generate_barcode_image(self, barcode_text):
-        # 创建条形码对象
+        # Creating Barcode Objects
         barcode_class = barcode.get_barcode_class("code128")
         barcode_object = barcode_class(barcode_text, writer=ImageWriter())
 
-        # 设置条形码尺寸和边距
+        # Set barcode size and margins
         options = {
             'module_width': 0.3,
             'module_height': 10.0,
@@ -126,10 +126,10 @@ class BarcodeGenerator:
             'font_size': 12,
         }
 
-        # 生成条形码图像
+        # Generate barcode images
         barcode_image = barcode_object.render(options)
 
-        # 在图像底部添加标注
+        # Add annotations to the bottom of the image
         label_text = "TRAINING USE ONLY"
         label_font = ImageFont.truetype("arial.ttf", 20)
         label_width, label_height = label_font.getsize(label_text)
@@ -143,31 +143,31 @@ class BarcodeGenerator:
         return barcode_image
 
     def scan_barcode(self):
-        # 打开摄像头进行扫描
+        # Turn on the camera for scanning
         video_capture = cv2.VideoCapture(0)
-        # 设置窗口的最小尺寸
+        # Set the minimum size of the window
         self.root.minsize(500, 600)
 
         def scan_loop():
             nonlocal video_capture
             ret, frame = video_capture.read()
-            # 获取摄像头的帧率
+            # Get the frame rate of the camera
             fps = video_capture.get(cv2.CAP_PROP_FPS)
-            # 将帧率添加到摄像头的视频流上
+            # Adding the frame rate to the camera's video stream
             cv2.putText(frame, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
             if not ret:
                 messagebox.showerror("Error", "Cannot turn on the camera")
                 return
 
-            # 从图像中解码条形码
+            # Decoding barcodes from images
             barcodes = decode(frame)
 
             if len(barcodes) > 0:
-                # 获取条形码数据
+                # Obtain barcode data
                 barcode_data = barcodes[0].data.decode("utf-8")
 
-                # 解析条形码数据
+                # Parsing barcode data
                 barcode_parts = barcode_data.split('-')
                 if len(barcode_parts) == 5:
                     room_number, type_index, brand_index, location_index, barcode_number = barcode_parts
@@ -175,25 +175,25 @@ class BarcodeGenerator:
                     product_brand = self.get_csv_data("Brand.csv")[int(brand_index) - 1]
                     asset_location = self.get_csv_data("Location.csv")[int(location_index) - 1]
 
-                    # 显示扫描结果
+                    # Show scan results
                     messagebox.showinfo("Scan Results",
                                         f"Room number: {room_number}\nProduct Type: {product_type}\nProduct Brands: {product_brand}\nAsset Location: {asset_location}\nBar Code: {barcode_number}")
 
-                    # 写入Excel文件
+                    # Write to Excel file
                     self.write_to_excel(room_number, product_type, product_brand, asset_location, barcode_number)
 
                 else:
                     messagebox.showerror("Error", "The scanned barcode is not in the correct format")
 
-            # 在摄像头显示框中显示图像
+            # Displaying images in the camera display box
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image = Image.fromarray(frame)
             image = image.resize((400, 300))
             image = ImageTk.PhotoImage(image)
             self.video_frame.configure(image=image)
-            self.video_frame.image = image  # 保持引用，避免被垃圾回收
+            self.video_frame.image = image  # Keep reference to avoid garbage collection
 
-            # 继续循环扫描
+            # Continue Loop Scan
             self.root.after(1, scan_loop)
 
         scan_loop()
@@ -224,14 +224,14 @@ class BarcodeGenerator:
     def get_random_number_for_field(self, field):
         used_numbers_file = f"used_numbers_{field}.txt"
 
-        # 检查已使用号码文件是否存在，不存在则创建
+        # Check if the used number file exists, and create it if it does not.
         if not os.path.exists(used_numbers_file):
             open(used_numbers_file, 'w').close()
 
-        # 读取已使用的号码集合
+        # Retrieve the collection of used numbers
         used_numbers = self.used_numbers[field]
 
-        # 生成随机编号，直到生成一个未使用的编号
+        # Generate random numbers until an unused number is generated
         while True:
             barcode_number = ''.join(random.choice(string.digits) for _ in range(3))
             if barcode_number not in used_numbers:
@@ -241,7 +241,7 @@ class BarcodeGenerator:
                 messagebox.showerror("Error", f"All possible numbers have been used for {field}")
                 return None
 
-        # 将已使用的号码集合写入文件
+        # Writing a collection of used numbers to a file
         with open(used_numbers_file, 'w') as file:
             file.write('\n'.join(used_numbers))
 
